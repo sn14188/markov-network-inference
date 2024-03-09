@@ -1,4 +1,5 @@
 import random
+import matplotlib.pyplot as plt
 
 # Variable & domain
 variables = ["A", "B", "C", "D", "E", "F"]
@@ -97,28 +98,54 @@ def generate_sample(sample, variable):
     else:
         new_sample[variable] = domain[variable][1]
 
-    print(new_sample.values())
+    # print(new_sample.values())
     return new_sample
 
 def gibbs_sampling(iteration):
+    samples = []
     curr_sample = {"A": "a0", "B": "b1", "C": "c0", "D": "d0", "E": "e0", "F": "f0"}
     resample_order = ["A", "D", "E", "F"]
     variable_index = 0
-    e0_count, e1_count = 0, 0
+
+    e0_count, e1_count, total_count = 0, 0, 0
+    prob_e0, prob_e1 = 0, 0
+    probs_e0 = []
 
     for _ in range(iteration):
         variable = resample_order[variable_index]
         curr_sample = generate_sample(curr_sample, variable)
+        samples.append(curr_sample)
+
+        # Compute the probability P(E|b1, c0)
         if curr_sample["E"] == "e0":
             e0_count += 1
         else:
             e1_count += 1
+        total_count = e0_count + e1_count
+        prob_e0 = e0_count / total_count
+        prob_e1 = e1_count / total_count
+        probs_e0.append(prob_e0) # To plot P(E = e0)
+
         variable_index = (variable_index + 1) % len(resample_order)
 
-    # Compute the probability P(E|b1, c0)
-    print("")
-    print(f"e0_count: {e0_count}, e1_count: {e1_count}, total: {e0_count + e1_count}")
-    print(f"P(E|b1, c0) = <{e0_count / (e0_count + e1_count)}, {e1_count / (e0_count + e1_count)}>")
+    print(f"e0_count: {e0_count}, e1_count: {e1_count}, total: {total_count}")
+    print(f"P(E|b1, c0) = <{prob_e0}, {prob_e1}>")
+
+    # Plotting
+    plt.title("Gibbs Sampling")
+    plt.plot(probs_e0, label="P(E = e0)")
+    plt.xscale("log")
+    plt.xlabel("N (logarithmic scale)")
+    plt.ylabel("Probability")
+    plt.axhline(y=0.1567, color="r", label="P(E = e0) from VE")
+    plt.legend()
+    plt.show()
+
+    # Save samples as a file
+    file_name = "samples.txt"
+    with open(file_name, "w") as f:
+        for sample in samples:
+            f.write(f"{sample}\n")
 
 if __name__ == "__main__":
     gibbs_sampling(100000)
